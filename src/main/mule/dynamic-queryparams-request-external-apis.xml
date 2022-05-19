@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a1d88d73-f387-429b-9a86-da425e88d7cf" doc:description="This application is to get data from external free APIs by passing dynamic query parameters using http request." >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="dynamic-queryparams-requestflow" doc:id="a0ce817a-c6db-4053-890c-fcc41d091bc1" >
+		<http:listener doc:name="Listener" doc:id="468b6b28-5e47-4b40-a0ee-9552a38743d3" config-ref="HTTP_Listener_config" path="get-data" doc:description="This application is to get data from external free APIs by passing dynamic query parameters using http request."/>
+		<set-variable value="#[attributes.queryParams.name]" doc:name="a variable to store different names" doc:id="2b54449c-b645-46c2-8b1b-36b3ba38e4bc" variableName="namevar"/>
+		<logger level="INFO" doc:name="Logger" doc:id="1c2de79c-c540-48e0-b27d-4f21900e091f" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="879e7ce3-5e1a-4491-b81d-cab3b01e07a8" >
+			<route >
+				<http:request method="GET" doc:name="Genderize" doc:id="707abcc2-a219-4088-9c8f-2b7bb5b25288" url='#["https://api.genderize.io?name=" ++ vars.namevar]'/>
+			</route>
+			<route >
+				<http:request method="GET" doc:name="Nationalize" doc:id="481423ca-8499-414c-9a6d-c079267a7034" url='#["https://api.nationalize.io?name=" ++ vars.namevar]'/>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Logger" doc:id="0d843219-39d1-47b3-acf4-9b7e517517fc" />
+		<ee:transform doc:name="Combine" doc:id="01ca89dc-0781-4843-ab30-5c8d80f61787" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Gender": payload."0".payload,
+	"Nationality": payload."1".payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4e6f1bf3-3bde-4d6b-a84f-0ca1de696414" />
+	</flow>
+</mule>
